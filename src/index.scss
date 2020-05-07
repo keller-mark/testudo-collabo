@@ -1,0 +1,95 @@
+@import '~normalize.css/normalize.css';
+@import '~@blueprintjs/icons/lib/css/blueprint-icons.css';
+@import '~@blueprintjs/core/lib/css/blueprint.css';
+
+$red: #E21833;
+$yellow: #FFD520;
+$black: #000;
+$white: #fff;
+
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.emoji {
+  display: inline-block;
+  width: auto;
+  height: 1em;
+  vertical-align: -0.125em;
+}
+
+.app {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  .header {
+    width: 100%;
+    height: 10vh;
+    flex-basis: 1;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: row;
+
+    .header-left {
+      width: 50%;
+      padding: 1rem;
+    }
+    .header-right {
+      width: 50%;
+      .bp3-button {
+        float: right;
+        margin-right: 10px;
+      }
+
+    }
+  }
+
+  .background {
+    position: relative;
+    border: 0px solid red;
+    width: 100%;
+    height: 80vh;
+    flex-basis: 9;
+  }
+
+  .testudo-canvas-wrapper {
+    width: 100%;
+    height: 80vh;
+    position: absolute;
+    top: 0;
+    left: 0;
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+  }
+
+  .testudo-canvas {
+    border: 1px solid blue;
+  }
+
+}
+
+.item-list {
+  display: block;
+  .item {
+    cursor: pointer;
+    display: inline-block;
+    border: 0px solid gray;
+    width: 33%;
+    height: 100px;
+    margin-top: 40px;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+}
