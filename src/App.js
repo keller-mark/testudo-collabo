@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Button, ButtonGroup, AnchorButton, Drawer, Icon } from "@blueprintjs/core";
+import { Button, ButtonGroup, AnchorButton, Drawer, Tag } from "@blueprintjs/core";
 import { IconNames } from "@blueprintjs/icons";
 import TestudoCanvas from './TestudoCanvas';
 import ItemList from './ItemList';
@@ -36,6 +36,10 @@ function App() {
       </div>
       <div className="background">
         <TestudoCanvas handState={handState} item={item} />
+      </div>
+      <div className="footer">
+        <p><Tag>rubs</Tag> <Tag minimal>4</Tag> last hour, <Tag minimal>10</Tag> today, <Tag minimal>12</Tag> all time.</p>
+        <p><Tag>donations</Tag> <Tag minimal>400</Tag> last hour, <Tag minimal>10</Tag> today, <Tag minimal>12</Tag> all time.</p>
       </div>
 
       <Drawer

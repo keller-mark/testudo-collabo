@@ -24,7 +24,7 @@ function ItemSprites(props) {
                 y={j*yi}
                 width={itemWidth}
                 height={itemHeight}
-                alpha={0.0004*Math.random()*1000/factor}
+                alpha={0.0005*Math.random()*1000/factor}
             />
         ))
     ));

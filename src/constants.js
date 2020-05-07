@@ -13,7 +13,8 @@ export const items = [
     "cone",
     "hifive",
     "oculus",
-    "coffee1"
+    "coffee1",
+    "fire"
 ];
 
 export const itemToPath = (name) => `img/items/${name}.png`;
