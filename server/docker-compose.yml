@@ -1,0 +1,20 @@
+version: "2"
+services:
+  web:
+    depends_on:
+      - redis
+    image: "mkeller7/testudo-collabo-server:latest"
+    ports:
+      - 8000:8000
+    environment:
+      - REDIS_PASS=${REDIS_PASS}
+    links:
+      - redis
+  redis:
+    image: "redis:6-alpine"
+    command: redis-server --requirepass ${REDIS_PASS}
+    environment:
+      - REDIS_REPLICATION_MODE=master
+
+
+
