@@ -34,11 +34,11 @@ function ItemSprites(props) {
     return range(GRID_HEIGHT).map((i) => (
         range(GRID_WIDTH).map((j) => {
             const iFlat = GRID_WIDTH*i + j;
-            const count = arr[iFlat];
-            let alpha = clamp(opacity*count, 0, 1);
+            let count = arr[iFlat];
             if(logScaleAlpha && count > 0) {
-                alpha = Math.log(alpha);
+                count = Math.log10(count+1);
             }
+            const alpha = clamp(opacity*count, 0, 1);
             return (
                 <Sprite
                     key={`${i}-${j}`}
@@ -65,8 +65,8 @@ function HandSprites(props) {
             arr={arr}
             width={width}
             height={height}
-            opacity={0.05}
-            logScaleAlpha
+            opacity={0.5}
+            logScaleAlpha={true}
         />
     );
 }
@@ -131,7 +131,7 @@ export default function TestudoCanvas(props) {
         return () => window.removeEventListener('resize', resizeHandler);
     }, []);
 
-    const onPointerDown = useCallback((event) => {
+    const onPointerDown = useCallback(throttle((event) => {
         const origEvent = event.data.originalEvent;
         if(origEvent) {
             const x = origEvent.clientX - left;
@@ -158,7 +158,7 @@ export default function TestudoCanvas(props) {
             }
 
         }
-    }, [top, left, item, width, height]);
+    }, 500), [top, left, item, width, height]);
 
 
     const cursorStyle = (isPlacing ? 
@@ -167,6 +167,7 @@ export default function TestudoCanvas(props) {
     );
 
     const donationTotal = Object.values(itemTotals).reduce(sum, 0);
+    const numberFormatter = new Intl.NumberFormat('en-US');
 
     return (
         <div ref={divRef} className="testudo-canvas-wrapper">
@@ -197,8 +198,8 @@ export default function TestudoCanvas(props) {
             </Stage>
             </div>
             <div className="footer">
-                <p><Tag>rubs</Tag> <Tag minimal>{rubTotal}</Tag></p>
-                <p><Tag>donations</Tag> <Tag minimal>{donationTotal}</Tag></p>
+                <p><Tag>rubs</Tag> <Tag minimal>{numberFormatter.format(rubTotal)}</Tag></p>
+                <p><Tag>donations</Tag> <Tag minimal>{numberFormatter.format(donationTotal)}</Tag></p>
             </div>
         </div>
     );

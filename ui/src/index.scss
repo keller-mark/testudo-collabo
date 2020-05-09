@@ -81,11 +81,10 @@ body {
         display: block;
         top: 0;
         left: 0;
+        canvas {
+            user-select: none;
+        }
     }
-  }
-
-  .testudo-canvas {
-    border: 1px solid blue;
   }
 
 }

@@ -49,11 +49,11 @@ function App() {
     });
   }, []);
 
-  const onSelectItem = useCallback((name) => {
+  const onSelectItem = (name) => {
     setIsPicking(false);
     setItem(name);
     setHandState(HAND_PLACING);
-  });
+  };
 
   return (
     <div className="app">
