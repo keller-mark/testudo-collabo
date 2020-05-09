@@ -26,29 +26,15 @@ async def get_r():
 
 HEADERS = { 'Access-Control-Allow-Origin': '*' }
 
+ITEMS = list(range(20)) + [99] # itemm indices
 GRID_SIZE = 50*50
 DTYPE = [('index', np.uint16), ('count', np.uint16)]
 
-ITEMS = [
-    "rubs",
-    "beer1",
-    "bottle1",
-    "bottle2",
-    "bottle3",
-    "brick1",
-    "candy1",
-    "candy2",
-    "chips1",
-    "cone",
-    "hifive",
-    "oculus",
-    "coffee1",
-    "fire",
-]
 
 async def get_item_counts(r, item, to_bytes=True):
     x = await r.zrange(item, 0, -1, withscores=True, encoding=None)
     x = np.sort(np.array(x, dtype=DTYPE), order='index')['count'][:]
+    x = np.concatenate((np.array([item], dtype=np.uint16), x)) # prepend the item index
     if to_bytes:
         return x.tobytes()
     else:
@@ -98,7 +84,7 @@ async def route_init(request):
 @app.route('/get', methods=['GET'])
 async def route_get(request):
   r = await get_r()
-  x = await get_item_counts(r, "rubs", to_bytes=False)
+  x = await get_item_counts(r, 99, to_bytes=False)
   
   return JSONResponse(
     content=x,
@@ -109,7 +95,7 @@ async def route_get(request):
 schema_incr = {
   "type": "object",
   "properties": {
-    "item": {"type": "string"},
+    "item": {"type": "integer"},
     "i": {"type": "integer"}
   }
 }
@@ -117,7 +103,7 @@ schema_incr = {
 async def route_incr(request):
   req = await request.json()
   validate(req, schema_incr)
-  item = req["item"]
+  item = int(req["item"])
   i = int(req["i"])
   assert(item in ITEMS)
   assert(0 <= i < GRID_SIZE)

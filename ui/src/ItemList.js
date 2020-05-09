@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { Classes } from "@blueprintjs/core";
-import { items, itemToPath } from './constants';
+import { itemToPath } from './utils';
+import { ITEMS } from './constants';
 
 
 export default function ItemList(props) {
@@ -9,12 +10,12 @@ export default function ItemList(props) {
     return (
         <div className={Classes.DRAWER_BODY}>
             <div className="item-list">
-                {items.map((name) => (
+                {ITEMS.map((item) => (
                     <div
-                        key={name}
+                        key={item}
                         className="item"
-                        style={{backgroundImage: `url('${itemToPath(name)}')`}}
-                        onClick={() => onSelect(name)}
+                        style={{backgroundImage: `url('${itemToPath(item)}')`}}
+                        onClick={() => onSelect(item)}
                     />
                 ))}
             </div>

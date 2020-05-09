@@ -1,10 +1,11 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import PubSub from 'pubsub-js';
 import { Button, ButtonGroup, AnchorButton, Drawer, Tag } from "@blueprintjs/core";
 import { IconNames } from "@blueprintjs/icons";
 import TestudoCanvas from './TestudoCanvas';
 import ItemList from './ItemList';
 
-import { HAND_RUBBING, HAND_PLACING } from './constants';
+import { HAND_RUBBING, HAND_PLACING, WS_URL, EVENT_LOAD } from './constants';
 
 function App() {
 
@@ -12,6 +13,28 @@ function App() {
   const [isPicking, setIsPicking] = useState(false);
   const [item, setItem] = useState(null);
 
+  useEffect(() => {
+    const socket = new WebSocket(WS_URL + '/rub-or-donate');
+
+    // Connection opened
+    socket.addEventListener('open', (event) => {
+        socket.send(JSON.stringify({"type": "init"}));
+    });
+
+    // Listen for messages
+    socket.addEventListener('message', (event) => {
+        const { data } = event;
+        data.arrayBuffer().then((buf) => {
+            const arr = new Uint16Array(buf);
+            PubSub.publish(EVENT_LOAD, arr);
+        });
+    });
+
+    // Connection closed
+    socket.addEventListener('close', (event) => {
+        console.log('Closed websocket connection', event);
+    });
+  }, []);
 
   const onSelectItem = useCallback((name) => {
     setIsPicking(false);
