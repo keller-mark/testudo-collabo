@@ -26,8 +26,8 @@ async def get_r():
 
 HEADERS = { 'Access-Control-Allow-Origin': '*' }
 
-ITEMS = list(range(20)) + [99] # itemm indices
-GRID_SIZE = 50*50
+ITEMS = [99] + list(range(20)) # itemm indices
+GRID_SIZE = 50*28
 DTYPE = [('index', np.uint16), ('count', np.uint16)]
 
 
@@ -44,8 +44,14 @@ async def listen(websocket):
     r = await get_r()
     await websocket.accept()
     try:
+        # Confirm that this was the initialization message.
         init_msg = await websocket.receive_json()
         assert(init_msg["type"] == "init")
+
+        # On initialization, respond with all item arrays.
+        for item in ITEMS:
+            data = await get_item_counts(r, item)
+            await websocket.send_bytes(data)
     except Exception as e:
         print(str(e))
         return websocket.close()
@@ -72,7 +78,7 @@ async def route_listen(websocket):
 async def route_init(request):
   r = await get_r()
   for item in ITEMS:
-    x = list(zip([0]*GRID_SIZE, [ i for i in range(GRID_SIZE) ]))
+    x = list(zip([0]*GRID_SIZE, list(range(GRID_SIZE))))
     print(x[0:4])
     await r.zadd(item, *itertools.chain.from_iterable(x))
   return JSONResponse(

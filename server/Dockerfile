@@ -8,7 +8,7 @@ RUN conda install -y -c conda-forge aioredis==1.2.0
 # Mount code as volume for development
 RUN mkdir -p /app
 
-ENV WEB_CONCURRENCY '1'
+ENV WEB_CONCURRENCY '4'
 ENV PORT 8000
 ENV DEBUG '1'
 

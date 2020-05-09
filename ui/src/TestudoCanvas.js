@@ -1,10 +1,14 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { Tag } from "@blueprintjs/core";
 import PubSub from 'pubsub-js';
-import { Graphics, BLEND_MODES, Sprite as PixiSprite } from 'pixi.js';
+import { json as d3_json } from 'd3-fetch';
 import { Stage, Container, Text, Sprite, useApp } from '@inlet/react-pixi';
 import range from 'lodash/range';
-import { itemToPath, itemToInt, intToItem } from './utils';
-import { HAND_PLACING, ITEMS, EVENT_LOAD, GRID_SIZE, GRID_WIDTH, GRID_HEIGHT, AR } from './constants';
+import throttle from 'lodash/throttle';
+import clamp from 'lodash/clamp';
+import { itemToPath, itemToInt, intToItem, sum } from './utils';
+import { HAND_PLACING, ITEMS, EVENT_LOAD, GRID_SIZE, GRID_WIDTH, GRID_HEIGHT, 
+    AR, HTTP_URL, ITEM_MASK, TERP_MASK } from './constants';
 
 function ItemSprites(props) {
     const {
@@ -12,7 +16,9 @@ function ItemSprites(props) {
         item,
         width,
         height,
-        opacity = 1
+        opacity = 1,
+        scale = 1,
+        logScaleAlpha = false,
     } = props;
 
     if(!arr) {
@@ -21,14 +27,18 @@ function ItemSprites(props) {
     const xi = width / GRID_WIDTH;
     const yi = height / GRID_HEIGHT;
 
-    const itemWidth = width/20;
+    const itemWidth = scale*width/20;
     const itemHeight = itemWidth;
     const itemPath = itemToPath(item);
     
     return range(GRID_HEIGHT).map((i) => (
         range(GRID_WIDTH).map((j) => {
             const iFlat = GRID_WIDTH*i + j;
-            const alpha = Math.min(1, opacity*arr[iFlat]);
+            const count = arr[iFlat];
+            let alpha = clamp(opacity*count, 0, 1);
+            if(logScaleAlpha && count > 0) {
+                alpha = Math.log(alpha);
+            }
             return (
                 <Sprite
                     key={`${i}-${j}`}
@@ -55,7 +65,8 @@ function HandSprites(props) {
             arr={arr}
             width={width}
             height={height}
-            opacity={0.005}
+            opacity={0.05}
+            logScaleAlpha
         />
     );
 }
@@ -70,6 +81,7 @@ function DonationSprites(props) {
             width={width}
             height={height}
             opacity={1}
+            scale={1.5}
         />
     )));
 }
@@ -80,27 +92,39 @@ export default function TestudoCanvas(props) {
     const divRef = useRef();
     const [width, setWidth] = useState(null);
     const [height, setHeight] = useState(null);
+    const [top, setTop] = useState(0);
+    const [left, setLeft] = useState(0);
     const [data, setData] = useState({});
+    const [rubTotal, setRubTotal] = useState(0);
+    const [itemTotals, setItemTotals] = useState({});
 
     useEffect(() => {
         const token = PubSub.subscribe(EVENT_LOAD, (msg, arr) => {
             const i = arr[0];
             const item = intToItem(i);
             const data = arr.subarray(1);
+
+            // Store the new array.
             setData(prevData => ({ ...prevData, [item]: data }));
+
+            // Compute sum.
+            const total = data.reduce(sum);
+            if(item === "rubs") {
+                setRubTotal(total);
+            } else {
+                setItemTotals(prevTotals => ({ ...prevTotals, [item]: total }));
+            }
         });
         return () => PubSub.unsubscribe(token);
     }, []);
 
-    const onMount = useCallback((app) => {
-        
-    }, []);
-
     useEffect(() => {
         const resizeHandler = () => {
-            const { width: divWidth, height: divHeight } = divRef.current.getBoundingClientRect();
+            const { width: divWidth, top: divTop, left: divLeft } = divRef.current.getBoundingClientRect();
             setWidth(divWidth);
             setHeight(divWidth/AR);
+            setTop(divTop);
+            setLeft(divLeft);
         }
         resizeHandler();
         window.addEventListener('resize', resizeHandler);
@@ -108,8 +132,33 @@ export default function TestudoCanvas(props) {
     }, []);
 
     const onPointerDown = useCallback((event) => {
-        console.log(event);
-    })
+        const origEvent = event.data.originalEvent;
+        if(origEvent) {
+            const x = origEvent.clientX - left;
+            const y = origEvent.clientY - top;
+
+            const xi = width / GRID_WIDTH;
+            const yi = height / GRID_HEIGHT;
+
+            const j = clamp(Math.round(x / xi), 0, GRID_WIDTH);
+            const i = clamp(Math.round(y / yi), 0, GRID_HEIGHT);
+            const iFlat = GRID_WIDTH*i + j;
+            const itemIndex = itemToInt(item);
+
+            if((item === "rubs" && TERP_MASK.includes(iFlat))
+                || (item !== "rubs" && ITEM_MASK.includes(iFlat))) {
+                const req = {
+                    item: itemIndex,
+                    i: iFlat,
+                };
+                d3_json(
+                    HTTP_URL + '/incr',
+                    { method: "POST", body: JSON.stringify(req) }
+                );
+            }
+
+        }
+    }, [top, left, item, width, height]);
 
 
     const cursorStyle = (isPlacing ? 
@@ -117,12 +166,14 @@ export default function TestudoCanvas(props) {
         { cursor: `url('img/raised-hand-emoji.png'), auto` }
     );
 
+    const donationTotal = Object.values(itemTotals).reduce(sum, 0);
+
     return (
-        <div ref={divRef} className="testudo-canvas-wrapper" style={cursorStyle}>
+        <div ref={divRef} className="testudo-canvas-wrapper">
+            <div style={{ width: `${width}px`, height: `${height}px`, ...cursorStyle }}>
             <Stage
                 width={width}
                 height={height}
-                onMount={onMount}
                 options={{
                     transparent: true,
                     antialias: true,
@@ -140,10 +191,15 @@ export default function TestudoCanvas(props) {
                     pointerdown={onPointerDown}
                 />
                 <Container>
-                    <DonationSprites data={data} width={width} height={height} />
                     <HandSprites arr={data.rubs} width={width} height={height} />
+                    <DonationSprites data={data} width={width} height={height} />
                 </Container>
             </Stage>
+            </div>
+            <div className="footer">
+                <p><Tag>rubs</Tag> <Tag minimal>{rubTotal}</Tag></p>
+                <p><Tag>donations</Tag> <Tag minimal>{donationTotal}</Tag></p>
+            </div>
         </div>
     );
 }

@@ -17,22 +17,35 @@ function App() {
     const socket = new WebSocket(WS_URL + '/rub-or-donate');
 
     // Connection opened
-    socket.addEventListener('open', (event) => {
+    socket.addEventListener('open', () => {
         socket.send(JSON.stringify({"type": "init"}));
     });
 
     // Listen for messages
-    socket.addEventListener('message', (event) => {
-        const { data } = event;
-        data.arrayBuffer().then((buf) => {
-            const arr = new Uint16Array(buf);
-            PubSub.publish(EVENT_LOAD, arr);
-        });
+    socket.addEventListener('message', (msg) => {
+        const blob = msg.data;
+
+        try {
+            blob.arrayBuffer().then((buf) => {
+                const arr = new Uint16Array(buf);
+                PubSub.publish(EVENT_LOAD, arr);
+            });
+        } catch(e) {
+            const fileReader = new FileReader();
+            fileReader.onload = (event) => {
+                const buf = event.target.result;
+                if(buf) {
+                    const arr = new Uint16Array(buf);
+                    PubSub.publish(EVENT_LOAD, arr);
+                }
+            };
+            fileReader.readAsArrayBuffer(blob);
+        }
     });
 
     // Connection closed
-    socket.addEventListener('close', (event) => {
-        console.log('Closed websocket connection', event);
+    socket.addEventListener('close', (msg) => {
+        console.log('Closed websocket connection', msg);
     });
   }, []);
 
@@ -58,17 +71,14 @@ function App() {
         </div>
       </div>
       <div className="background">
-        <TestudoCanvas handState={handState} item={item} />
-      </div>
-      <div className="footer">
-        <p><Tag>rubs</Tag> <Tag minimal>4</Tag> last hour, <Tag minimal>10</Tag> today, <Tag minimal>12</Tag> all time.</p>
-        <p><Tag>donations</Tag> <Tag minimal>400</Tag> last hour, <Tag minimal>10</Tag> today, <Tag minimal>12</Tag> all time.</p>
+        <TestudoCanvas handState={handState} item={(handState === HAND_PLACING ? item : "rubs")} />
       </div>
 
       <Drawer
         isOpen={isPicking}
         onClose={() => setIsPicking(false)}
         title="Select item to donate"
+        lazy={false}
       >
         <ItemList
           onSelect={onSelectItem}
