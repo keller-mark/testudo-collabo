@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React from 'react';
 import { Classes } from "@blueprintjs/core";
 import { itemToPath } from './utils';
 import { ITEMS } from './constants';

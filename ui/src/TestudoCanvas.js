@@ -2,13 +2,13 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Tag } from "@blueprintjs/core";
 import PubSub from 'pubsub-js';
 import { json as d3_json } from 'd3-fetch';
-import { Stage, Container, Text, Sprite, useApp } from '@inlet/react-pixi';
+import { Stage, Container, Sprite } from '@inlet/react-pixi';
 import range from 'lodash/range';
 import throttle from 'lodash/throttle';
 import clamp from 'lodash/clamp';
 import { itemToPath, itemToInt, intToItem, sum } from './utils';
-import { HAND_PLACING, ITEMS, EVENT_LOAD, GRID_SIZE, GRID_WIDTH, GRID_HEIGHT, 
-    AR, HTTP_URL, ITEM_MASK, TERP_MASK } from './constants';
+import { HAND_PLACING, EVENT_LOAD, GRID_WIDTH, GRID_HEIGHT, 
+    AR, HTTP_URL, ITEM_MASK, RUB_MASK } from './constants';
 
 function ItemSprites(props) {
     const {
@@ -16,13 +16,14 @@ function ItemSprites(props) {
         item,
         width,
         height,
+        mask,
         opacity = 1,
         scale = 1,
         logScaleAlpha = false,
     } = props;
 
-    if(!arr) {
-        return null;
+    if(!arr || !mask || item === "rubs") {
+        return [];
     }
     const xi = width / GRID_WIDTH;
     const yi = height / GRID_HEIGHT;
@@ -30,32 +31,36 @@ function ItemSprites(props) {
     const itemWidth = scale*width/20;
     const itemHeight = itemWidth;
     const itemPath = itemToPath(item);
-    
-    return range(GRID_HEIGHT).map((i) => (
-        range(GRID_WIDTH).map((j) => {
-            const iFlat = GRID_WIDTH*i + j;
-            let count = arr[iFlat];
-            if(logScaleAlpha && count > 0) {
-                count = Math.log10(count+1);
-            }
-            const alpha = clamp(opacity*count, 0, 1);
-            return (
-                <Sprite
-                    key={`${i}-${j}`}
-                    image={itemPath}
-                    x={j*xi}
-                    y={i*yi}
-                    width={itemWidth}
-                    height={itemHeight}
-                    alpha={alpha}
-                />
-            );
-        })
-    ));
+
+
+    return Array.from(arr).map((count, iMask) => {
+        const iFlat = mask[iMask];
+        const j = Math.floor(iFlat / GRID_WIDTH);
+        const i = iFlat % GRID_WIDTH;
+        if(count === 0) {
+            return null;
+        }
+        if(logScaleAlpha) {
+            count = Math.log10(count+1);
+        }
+        const alpha = clamp(opacity*count, 0, 1);
+        console.log(iMask, iFlat, j, i, count, alpha, j*xi, i*yi);
+        return (
+            <Sprite
+                key={iMask}
+                image={itemPath}
+                x={i*xi}
+                y={j*yi}
+                width={itemWidth}
+                height={itemHeight}
+                alpha={alpha}
+            />
+        );
+    }).filter(Boolean);
 }
 
 function HandSprites(props) {
-    const { arr, width, height } = props;
+    const { arr, width, height, mask } = props;
     const item = 'raised-hand-emoji';
 
     return (
@@ -65,6 +70,7 @@ function HandSprites(props) {
             arr={arr}
             width={width}
             height={height}
+            mask={mask}
             opacity={0.5}
             logScaleAlpha={true}
         />
@@ -72,7 +78,7 @@ function HandSprites(props) {
 }
 
 function DonationSprites(props) {
-    const { data, width, height } = props;
+    const { data, width, height, mask } = props;
     return (Object.entries(data).map(([item, arr]) => (
         <ItemSprites
             key={item}
@@ -80,6 +86,7 @@ function DonationSprites(props) {
             arr={arr}
             width={width}
             height={height}
+            mask={mask}
             opacity={1}
             scale={1.5}
         />
@@ -108,7 +115,7 @@ export default function TestudoCanvas(props) {
             setData(prevData => ({ ...prevData, [item]: data }));
 
             // Compute sum.
-            const total = data.reduce(sum);
+            const total = data.reduce(sum, 0);
             if(item === "rubs") {
                 setRubTotal(total);
             } else {
@@ -145,18 +152,24 @@ export default function TestudoCanvas(props) {
             const iFlat = GRID_WIDTH*i + j;
             const itemIndex = itemToInt(item);
 
-            if((item === "rubs" && TERP_MASK.includes(iFlat))
-                || (item !== "rubs" && ITEM_MASK.includes(iFlat))) {
+            let iMask;
+
+            if(item === "rubs") {
+                iMask = RUB_MASK.indexOf(iFlat);
+            } else {
+                iMask = ITEM_MASK.indexOf(iFlat);
+            }
+
+            if(iMask >= 0) {
                 const req = {
                     item: itemIndex,
-                    i: iFlat,
+                    i: iMask,
                 };
                 d3_json(
                     HTTP_URL + '/incr',
                     { method: "POST", body: JSON.stringify(req) }
                 );
             }
-
         }
     }, 500), [top, left, item, width, height]);
 
@@ -192,8 +205,8 @@ export default function TestudoCanvas(props) {
                     pointerdown={onPointerDown}
                 />
                 <Container>
-                    <HandSprites arr={data.rubs} width={width} height={height} />
-                    <DonationSprites data={data} width={width} height={height} />
+                    <HandSprites arr={data.rubs} width={width} height={height} mask={RUB_MASK} />
+                    <DonationSprites data={data} width={width} height={height} mask={ITEM_MASK} />
                 </Container>
             </Stage>
             </div>

@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import PubSub from 'pubsub-js';
-import { Button, ButtonGroup, AnchorButton, Drawer, Tag } from "@blueprintjs/core";
+import { Button, ButtonGroup, AnchorButton, Drawer, Position, Tooltip } from "@blueprintjs/core";
 import { IconNames } from "@blueprintjs/icons";
 import TestudoCanvas from './TestudoCanvas';
 import ItemList from './ItemList';
@@ -61,8 +61,12 @@ function App() {
         <div className="header-left">
 
           <ButtonGroup>
-            <Button large text="✋ Rub nose" active={handState === HAND_RUBBING} onClick={() => setHandState(HAND_RUBBING)}/>
-            <Button large text="👇 Donate item" active={handState === HAND_PLACING} onClick={() => setIsPicking(true)}/>
+            <Tooltip content="Click to rub Testudo" position={Position.BOTTOM} hoverOpenDelay={20}>
+                <Button large text="✋ Rub nose" active={handState === HAND_RUBBING} onClick={() => setHandState(HAND_RUBBING)}/>
+            </Tooltip>
+            <Tooltip content="Select an item and click to place around Testudo" position={Position.BOTTOM} hoverOpenDelay={20}>
+                <Button large text="👇 Donate item" active={handState === HAND_PLACING} onClick={() => setIsPicking(true)}/>
+            </Tooltip>
           </ButtonGroup>
         </div>
         <div className="header-right">
