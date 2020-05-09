@@ -1,37 +1,34 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Tag } from "@blueprintjs/core";
+import { Tag, ProgressBar, Toaster, Position } from "@blueprintjs/core";
 import PubSub from 'pubsub-js';
 import { json as d3_json } from 'd3-fetch';
 import { Stage, Container, Sprite } from '@inlet/react-pixi';
+import shuffle from 'lodash/shuffle';
 import range from 'lodash/range';
-import throttle from 'lodash/throttle';
+import debounce from 'lodash/debounce';
 import clamp from 'lodash/clamp';
+import fromEntries from 'fromentries';
 import { itemToPath, itemToInt, intToItem, sum } from './utils';
-import { HAND_PLACING, EVENT_LOAD, GRID_WIDTH, GRID_HEIGHT, 
-    AR, HTTP_URL, ITEM_MASK, RUB_MASK } from './constants';
+import { ITEMS, HAND_PLACING, EVENT_LOAD, GRID_WIDTH, GRID_HEIGHT, 
+    AR, HTTP_URL, ITEM_MASK, RUB_MASK, TIME_LIMIT } from './constants';
 
-function ItemSprites(props) {
-    const {
-        arr,
-        item,
-        width,
-        height,
-        mask,
-        opacity = 1,
-        scale = 1,
-        logScaleAlpha = false,
-    } = props;
 
-    if(!arr || !mask || item === "rubs") {
+function HandSprites(props) {
+    const { arr, width, height, mask } = props;
+    
+    const item = 'raised-hand-emoji';
+    const logScaleAlpha = true;
+    const opacity = 0.5;
+    const scale = 1;
+
+    if(!arr || !mask) {
         return [];
     }
     const xi = width / GRID_WIDTH;
     const yi = height / GRID_HEIGHT;
 
-    const itemWidth = scale*width/20;
-    const itemHeight = itemWidth;
+    const itemSize = scale*width/20;
     const itemPath = itemToPath(item);
-
 
     return Array.from(arr).map((count, iMask) => {
         const iFlat = mask[iMask];
@@ -46,50 +43,68 @@ function ItemSprites(props) {
         const alpha = clamp(opacity*count, 0, 1);
         return (
             <Sprite
-                key={iMask}
+                key={`${item}-${iMask}`}
                 image={itemPath}
                 x={i*xi}
                 y={j*yi}
-                width={itemWidth}
-                height={itemHeight}
+                width={itemSize}
+                height={itemSize}
                 alpha={alpha}
             />
         );
     }).filter(Boolean);
 }
 
-function HandSprites(props) {
-    const { arr, width, height, mask } = props;
-    const item = 'raised-hand-emoji';
-
-    return (
-        <ItemSprites
-            key={item}
-            item={item}
-            arr={arr}
-            width={width}
-            height={height}
-            mask={mask}
-            opacity={0.5}
-            logScaleAlpha={true}
-        />
-    );
-}
-
 function DonationSprites(props) {
     const { data, width, height, mask } = props;
-    return (Object.entries(data).map(([item, arr]) => (
-        <ItemSprites
-            key={item}
-            item={item}
-            arr={arr}
-            width={width}
-            height={height}
-            mask={mask}
-            opacity={1}
-            scale={1.5}
-        />
-    )));
+    const logScaleAlpha = false;
+    const opacity = 1;
+    const scale = 2;
+
+    if(!data || !mask) {
+        return [];
+    }
+    const xi = width / GRID_WIDTH;
+    const yi = height / GRID_HEIGHT;
+
+    const itemSize = scale*width/20;
+
+    return range(ITEM_MASK.length).map((iMask) => {
+        const iFlat = mask[iMask];
+        const j = Math.floor(iFlat / GRID_WIDTH);
+        const i = iFlat % GRID_WIDTH;
+
+        const counts = ITEMS.map((item) => {
+            if(item === "rubs" || !data[item] || data[item][iMask] === 0) {
+                return null;
+            }
+            return [item, data[item][iMask]];
+        }).filter(Boolean).sort((a, b) => (a[1] - b[1]));
+
+        if(counts.length) {
+            console.log(counts);
+        }
+
+        return counts.map(([item, count]) => {
+            const itemPath = itemToPath(item);
+
+            if(logScaleAlpha) {
+                count = Math.log10(count+1);
+            }
+            const alpha = clamp(opacity*count, 0, 1);
+            return (
+                <Sprite
+                    key={`${item}-${iMask}`}
+                    image={itemPath}
+                    x={i*xi}
+                    y={j*yi}
+                    width={itemSize}
+                    height={itemSize}
+                    alpha={alpha}
+                />
+            );
+        });
+    });
 }
 
 export default function TestudoCanvas(props) {
@@ -103,6 +118,7 @@ export default function TestudoCanvas(props) {
     const [data, setData] = useState({});
     const [rubTotal, setRubTotal] = useState(0);
     const [itemTotals, setItemTotals] = useState({});
+    const [secondsRemaining, setSecondsRemaining] = useState(0);
 
     useEffect(() => {
         const token = PubSub.subscribe(EVENT_LOAD, (msg, arr) => {
@@ -137,44 +153,64 @@ export default function TestudoCanvas(props) {
         return () => window.removeEventListener('resize', resizeHandler);
     }, []);
 
-    const onPointerDown = useCallback(throttle((event) => {
+    useEffect(() => {
+        if(secondsRemaining > 0) {
+            setTimeout(() => setSecondsRemaining(oldVal => oldVal - 0.25), 250);
+        }
+    }, [secondsRemaining])
+
+    const onPointerDown = useCallback(debounce((event) => {
         const origEvent = event.data.originalEvent;
+        const toast = Toaster.create({position: Position.TOP }, document.body);
         if(origEvent) {
-            const x = origEvent.clientX - left;
-            const y = origEvent.clientY - top;
+            if(secondsRemaining) {
+                toast.show({ message: `Please wait ${TIME_LIMIT} seconds between rubs and donations.` });
+                return;
+            }
+            const itemSize = 2*width/20;
+            const x = origEvent.clientX - left - itemSize/2;
+            const y = origEvent.clientY - top - itemSize/2;
 
             const xi = width / GRID_WIDTH;
             const yi = height / GRID_HEIGHT;
 
             const j = clamp(Math.round(x / xi), 0, GRID_WIDTH);
             const i = clamp(Math.round(y / yi), 0, GRID_HEIGHT);
-            const iFlat = GRID_WIDTH*i + j;
+            let iFlat = GRID_WIDTH*i + j;
+
             const itemIndex = itemToInt(item);
 
             let iMask;
 
             if(item === "rubs") {
                 iMask = RUB_MASK.indexOf(iFlat);
+                if(iMask < 0) {
+                    toast.show({ message: "You rubbed a donation or the air. Please only rub Testudo." });
+                    return;
+                }
             } else {
                 iMask = ITEM_MASK.indexOf(iFlat);
+                if(iMask < 0) {
+                    toast.show({ message: "Please place donations around Testudo, not on top or in the air." });
+                    return;
+                }
             }
 
-            if(iMask >= 0) {
-                const req = {
-                    item: itemIndex,
-                    i: iMask,
-                };
-                d3_json(
-                    HTTP_URL + '/incr',
-                    { method: "POST", body: JSON.stringify(req) }
-                );
-            }
+            const req = {
+                item: itemIndex,
+                i: iMask,
+            };
+            d3_json(
+                HTTP_URL + '/incr',
+                { method: "POST", body: JSON.stringify(req) }
+            );
+            setSecondsRemaining(TIME_LIMIT);
         }
-    }, 500), [top, left, item, width, height]);
+    }, 500, { leading: true }), [top, left, item, width, height, secondsRemaining]);
 
 
     const cursorStyle = (isPlacing ? 
-        { cursor: `url('${itemToPath(item)}'), auto` } : 
+        { cursor: `crosshair` } : 
         { cursor: `url('img/raised-hand-emoji.png'), auto` }
     );
 
@@ -213,6 +249,8 @@ export default function TestudoCanvas(props) {
                 <p><Tag>rubs</Tag> <Tag minimal>{numberFormatter.format(rubTotal)}</Tag></p>
                 <p><Tag>donations</Tag> <Tag minimal>{numberFormatter.format(donationTotal)}</Tag></p>
             </div>
+            {secondsRemaining > 0 ? (<ProgressBar value={1 - secondsRemaining / TIME_LIMIT} />) : null}
+            
         </div>
     );
 }

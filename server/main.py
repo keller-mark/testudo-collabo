@@ -2,6 +2,7 @@
 from starlette.applications import Starlette
 from starlette.websockets import WebSocketDisconnect
 from starlette.responses import JSONResponse
+from websockets.exceptions import ConnectionClosed
 from jsonschema import validate
 import uvicorn
 import os
@@ -56,22 +57,23 @@ async def listen(websocket):
         # On initialization, respond with all item arrays.
         for item in ITEMS:
             data = await get_item_counts(r, item)
-            await websocket.send_bytes(data)
+            try:
+                await websocket.send_bytes(data)
+            except ConnectionClosed:
+                return
+
+        res = await r.subscribe('channel:1')
+        ch = res[0]
+        assert(isinstance(ch, aioredis.Channel))
+
+        async for ch_msg in ch.iter():
+            data = await get_item_counts(r, ch_msg)
+            try:
+                await websocket.send_bytes(data)
+            except ConnectionClosed:
+                return
     except Exception as e:
-        print(str(e))
         return websocket.close()
-
-    res = await r.subscribe('channel:1')
-    ch = res[0]
-    assert(isinstance(ch, aioredis.Channel))
-
-    async for ch_msg in ch.iter():
-        data = await get_item_counts(r, ch_msg)
-        try:
-            await websocket.send_bytes(data)
-            #await websocket.receive_json()
-        except WebSocketDisconnect:
-            print("websocket disconnect")
 
 
 # Routes
