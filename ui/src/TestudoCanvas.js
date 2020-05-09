@@ -44,7 +44,6 @@ function ItemSprites(props) {
             count = Math.log10(count+1);
         }
         const alpha = clamp(opacity*count, 0, 1);
-        console.log(iMask, iFlat, j, i, count, alpha, j*xi, i*yi);
         return (
             <Sprite
                 key={iMask}

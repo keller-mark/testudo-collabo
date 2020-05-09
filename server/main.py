@@ -26,8 +26,13 @@ async def get_r():
 
 HEADERS = { 'Access-Control-Allow-Origin': '*' }
 
-ITEMS = [99] + list(range(20)) # itemm indices
-GRID_SIZE = 50*28
+# Lengths of the mask arrays
+RUB_MASK_SIZE = 523
+ITEM_MASK_SIZE = 588
+
+# Item indices, 99 corresponds to the "rubs" item.
+ITEMS = [99] + list(range(20))
+# Dtype for numpy structured array.
 DTYPE = [('index', np.uint16), ('count', np.uint16)]
 
 
@@ -58,7 +63,7 @@ async def listen(websocket):
 
     res = await r.subscribe('channel:1')
     ch = res[0]
-    assert isinstance(ch, aioredis.Channel)
+    assert(isinstance(ch, aioredis.Channel))
 
     async for ch_msg in ch.iter():
         data = await get_item_counts(r, ch_msg)
@@ -78,19 +83,26 @@ async def route_listen(websocket):
 async def route_init(request):
   r = await get_r()
   for item in ITEMS:
-    x = list(zip([0]*GRID_SIZE, list(range(GRID_SIZE))))
-    print(x[0:4])
+    print(item)
+    if item == 99:
+        x = list(zip([0]*RUB_MASK_SIZE, list(range(RUB_MASK_SIZE))))
+    else:
+        x = list(zip([0]*ITEM_MASK_SIZE, list(range(ITEM_MASK_SIZE))))
     await r.zadd(item, *itertools.chain.from_iterable(x))
+    await r.publish('channel:1', item)
   return JSONResponse(
     content={"status": "Initialized!"},
     status_code=200,
     headers=HEADERS
   )
 
-@app.route('/get', methods=['GET'])
+@app.route('/get/{item:int}', methods=['GET'])
 async def route_get(request):
   r = await get_r()
-  x = await get_item_counts(r, 99, to_bytes=False)
+
+  item = int(request.path_params['item'])
+  assert(item in ITEMS)
+  x = await get_item_counts(r, item, to_bytes=False)
   
   return JSONResponse(
     content=x,
@@ -112,7 +124,10 @@ async def route_incr(request):
   item = int(req["item"])
   i = int(req["i"])
   assert(item in ITEMS)
-  assert(0 <= i < GRID_SIZE)
+  if item == 99:
+    assert(0 <= i < RUB_MASK_SIZE)
+  else:
+    assert(0 <= i < ITEM_MASK_SIZE)
 
   r = await get_r()
   await r.zincrby(item, 1, i)
