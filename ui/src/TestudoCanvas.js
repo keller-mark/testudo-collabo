@@ -6,7 +6,7 @@ import { Stage, Container, Sprite } from '@inlet/react-pixi';
 import range from 'lodash/range';
 import debounce from 'lodash/debounce';
 import clamp from 'lodash/clamp';
-import { itemToPath, itemToInt, intToItem, sum } from './utils';
+import { itemToPath, itemToInt, intToItem, sum, mobileAndTabletCheck } from './utils';
 import { ITEMS, HAND_PLACING, EVENT_LOAD, GRID_WIDTH, GRID_HEIGHT, 
     AR, HTTP_URL, ITEM_MASK, RUB_MASK, TIME_LIMIT } from './constants';
 
@@ -161,8 +161,15 @@ export default function TestudoCanvas(props) {
                 return;
             }
             const itemSize = 2*width/20;
-            const x = origEvent.clientX - left + (isPlacing ? - itemSize/2 : itemSize/2);
-            const y = origEvent.clientY - top + (isPlacing ? - itemSize/2 : itemSize/2);
+
+            const clientX = (origEvent.clientX ? origEvent.clientX : origEvent.pageX);
+            const clientY = (origEvent.clientY ? origEvent.clientY : origEvent.pageY);
+            
+            const desktopOffset = (isPlacing ? - itemSize/2 : itemSize/2);
+            const isMobile = mobileAndTabletCheck();
+            
+            const x = clientX - left + (isMobile ? 0 : desktopOffset);
+            const y = clientY - top + (isMobile ? 0 : desktopOffset);
 
             const xi = width / GRID_WIDTH;
             const yi = height / GRID_HEIGHT;
