@@ -10,8 +10,6 @@ import { itemToPath, itemToInt, intToItem, sum } from './utils';
 import { ITEMS, HAND_PLACING, EVENT_LOAD, GRID_WIDTH, GRID_HEIGHT, 
     AR, HTTP_URL, ITEM_MASK, RUB_MASK, TIME_LIMIT } from './constants';
 
-console.log(process.env);
-
 function HandSprites(props) {
     const { arr, width, height, mask } = props;
     
