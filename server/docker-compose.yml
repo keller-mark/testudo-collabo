@@ -4,7 +4,6 @@ services:
     image: "128935259397.dkr.ecr.us-east-2.amazonaws.com/testudo-collabo:latest"
     ports:
       - 80:8000
-      - 80:8000
     environment:
       - REDIS_PASS=${REDIS_PASS}
     links:
