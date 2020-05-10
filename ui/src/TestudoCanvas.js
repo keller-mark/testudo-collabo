@@ -1,17 +1,16 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Tag, ProgressBar, Toaster, Position } from "@blueprintjs/core";
+import { Tag, ProgressBar, Toaster, Position, Intent } from "@blueprintjs/core";
 import PubSub from 'pubsub-js';
 import { json as d3_json } from 'd3-fetch';
 import { Stage, Container, Sprite } from '@inlet/react-pixi';
-import shuffle from 'lodash/shuffle';
 import range from 'lodash/range';
 import debounce from 'lodash/debounce';
 import clamp from 'lodash/clamp';
-import fromEntries from 'fromentries';
 import { itemToPath, itemToInt, intToItem, sum } from './utils';
 import { ITEMS, HAND_PLACING, EVENT_LOAD, GRID_WIDTH, GRID_HEIGHT, 
     AR, HTTP_URL, ITEM_MASK, RUB_MASK, TIME_LIMIT } from './constants';
 
+console.log(process.env);
 
 function HandSprites(props) {
     const { arr, width, height, mask } = props;
@@ -80,10 +79,6 @@ function DonationSprites(props) {
             }
             return [item, data[item][iMask]];
         }).filter(Boolean).sort((a, b) => (a[1] - b[1]));
-
-        if(counts.length) {
-            console.log(counts);
-        }
 
         return counts.map(([item, count]) => {
             const itemPath = itemToPath(item);
@@ -168,8 +163,8 @@ export default function TestudoCanvas(props) {
                 return;
             }
             const itemSize = 2*width/20;
-            const x = origEvent.clientX - left - itemSize/2;
-            const y = origEvent.clientY - top - itemSize/2;
+            const x = origEvent.clientX - left + (isPlacing ? - itemSize/2 : itemSize/2);
+            const y = origEvent.clientY - top + (isPlacing ? - itemSize/2 : itemSize/2);
 
             const xi = width / GRID_WIDTH;
             const yi = height / GRID_HEIGHT;
@@ -205,6 +200,8 @@ export default function TestudoCanvas(props) {
                 { method: "POST", body: JSON.stringify(req) }
             );
             setSecondsRemaining(TIME_LIMIT);
+
+            toast.show({ message: `Testudo thanks you for the ${item}.`, intent: Intent.SUCCESS });
         }
     }, 500, { leading: true }), [top, left, item, width, height, secondsRemaining]);
 

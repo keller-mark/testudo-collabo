@@ -32,7 +32,7 @@ RUB_MASK_SIZE = 523
 ITEM_MASK_SIZE = 588
 
 # Item indices, 99 corresponds to the "rubs" item.
-ITEMS = [99] + list(range(20))
+ITEMS = [99] + list(range(24))
 # Dtype for numpy structured array.
 DTYPE = [('index', np.uint16), ('count', np.uint16)]
 
@@ -81,9 +81,13 @@ async def listen(websocket):
 async def route_listen(websocket):
   await listen(websocket)
 
-@app.route('/init', methods=['GET'])
+@app.route('/init/{pw:str}', methods=['GET'])
 async def route_init(request):
   r = await get_r()
+
+  pw = str(request.path_params['pw'])
+  assert(pw == os.environ.get('REDIS_PASS', ''))
+
   for item in ITEMS:
     print(item)
     if item == 99:

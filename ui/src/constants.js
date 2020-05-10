@@ -1,4 +1,4 @@
-export const SERVER_URL = "localhost:8000";
+export const SERVER_URL = (process.env.NODE_ENV === "development" ? "localhost:8000" : "");
 export const WS_URL = `ws://${SERVER_URL}`;
 export const HTTP_URL = `http://${SERVER_URL}`;
 
@@ -13,25 +13,26 @@ export const HAND_RUBBING = "rubbing";
 export const EVENT_LOAD = "load";
 
 export const ITEMS = [
-    "cup",
+    "pepsi",
     "chips",
     "candy",
     "coffee",
     "can",
-    
+    "chicken",
     "gyro",
     "noodles",
     "vr",
     "scoot",
     "seltzer",
     "wine",
-    "gin",
-    
+    "bottle",
     "pool",
     "brick",
     "cone",
     "bluelight",
+    "door",
     "toilet",
+    "piano",
     "sign",
     "squirrel",
     "fire",
