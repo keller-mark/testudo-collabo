@@ -37,9 +37,18 @@ body {
     display: flex;
     flex-direction: row;
 
+    @media screen and (max-width: 600px) {
+        height: 20vh;
+        display: inline-block;
+    }
+
     .header-left {
-      width: 50%;
-      padding: 1rem;
+        width: 50%;
+        padding: 1rem;
+
+        @media screen and (max-width: 600px) {
+            width: 100%;
+        }
     }
     .header-right {
       width: 50%;
@@ -47,7 +56,16 @@ body {
       .bp3-button {
         float: right;
         margin-right: 10px;
+
+        @media screen and (max-width: 600px) {
+            float: left;
+        }
       }
+
+        @media screen and (max-width: 600px) {
+            width: 100%;
+            position: relative;            
+        }
 
     }
   }
@@ -103,3 +121,4 @@ body {
     background-repeat: no-repeat;
   }
 }
+
