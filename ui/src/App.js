@@ -88,6 +88,7 @@ function App() {
           onSelect={onSelectItem}
         />
       </Drawer>
+      <img alt="testudo" src="img/icon.png" style={{display: 'none'}} />
     </div>
   );
 }
