@@ -2,6 +2,7 @@
   "name": "testudo-collabo",
   "version": "0.1.0",
   "private": true,
+  "homepage": "http://testudo.markk.co/",
   "dependencies": {
     "@blueprintjs/core": "^3.26.1",
     "@inlet/react-pixi": "^1.3.1",

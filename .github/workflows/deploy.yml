@@ -1,0 +1,23 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+    - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: yarn install and build
+        run: |
+          cd ui
+          yarn
+          yarn build
+      - name: Deploy site to gh-pages branch
+        uses: alex-page/blazing-fast-gh-pages-deploy@v1.1.0
+        with:
+          repo-token: ${{ secrets.GH_PAT }}
+          site-directory: ui/build
+          

@@ -10,6 +10,6 @@ RUN mkdir -p /app
 
 ENV WEB_CONCURRENCY '8'
 ENV PORT 8000
-ENV DEBUG '1'
+ENV DEBUG '0'
 
 COPY . /app

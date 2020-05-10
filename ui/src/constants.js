@@ -1,4 +1,4 @@
-export const SERVER_URL = (process.env.NODE_ENV === "development" ? "localhost:8000" : "");
+export const SERVER_URL = (process.env.NODE_ENV === "development" ? "localhost:8000" : "ec2-18-216-190-253.us-east-2.compute.amazonaws.com");
 export const WS_URL = `ws://${SERVER_URL}`;
 export const HTTP_URL = `http://${SERVER_URL}`;
 
