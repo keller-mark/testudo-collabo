@@ -62,7 +62,7 @@ function App() {
 
           <ButtonGroup>
             <Tooltip content="Click to rub Testudo" position={Position.BOTTOM} hoverOpenDelay={20}>
-                <Button large text="✋ Rub nose" active={handState === HAND_RUBBING} onClick={() => setHandState(HAND_RUBBING)}/>
+                <Button large text="✋ Rub" active={handState === HAND_RUBBING} onClick={() => setHandState(HAND_RUBBING)}/>
             </Tooltip>
             <Tooltip content="Select an item and click to place around Testudo" position={Position.BOTTOM} hoverOpenDelay={20}>
                 <Button large text="👇 Donate item" active={handState === HAND_PLACING} onClick={() => setIsPicking(true)}/>
